@@ -1,0 +1,65 @@
+name: Build Neon Defender APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip autoconf automake libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev build-essential gettext autopoint
+
+      - name: Install Buildozer
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install "buildozer @ git+https://github.com/kivy/buildozer.git" "cython==0.29.34"
+
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
+
+      - name: Build APK
+        env:
+          PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
+        run: |
+          yes | buildozer -v android debug
+
+      - name: Verify APK
+        run: |
+          test -n "$(find bin -maxdepth 1 -type f -name '*.apk' -print -quit)"
+          find bin -maxdepth 1 -type f -name '*.apk' -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeonDefender-APK
+          path: bin/*.apk
+          if-no-files-found: error
