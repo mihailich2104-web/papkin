@@ -50,7 +50,7 @@ jobs:
         env:
           PYTHONFORANDROID_PREREQUISITES_INSTALL_INTERACTIVE: "0"
         run: |
-          cd papkin
+
           yes | buildozer -v android debug
 
       - name: Verify APK
@@ -62,5 +62,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NeonDefender-APK
-          path: papkin/bin/*.apk
+          path: bin/*.apk
           if-no-files-found: error
